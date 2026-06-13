@@ -23,17 +23,24 @@ analyzer = ExpenseAnalyzer()
 
 # ── Expense parsing helpers ──────────────────────────────
 def parse_expense_input(text):
+    # Each tuple: (pattern, amount_group_index, description_group_index)
     patterns = [
-        r'spend?\s+(\d+(?:\.\d+)?)\s+(?:on|for|rupees?)?\s*(.+)',
-        r'spent?\s+(\d+(?:\.\d+)?)\s+(?:on|for|rupees?)?\s*(.+)',
-        r'(\d+(?:\.\d+)?)\s+(?:for|on|rupees?)?\s*(.+)',
-        r'paid?\s+(\d+(?:\.\d+)?)\s+(?:for|on)?\s*(.+)',
+        # "spent 500 on lunch", "spend 200 for groceries"
+        (r'(?:spend|spent)\s+(\d+(?:\.\d+)?)\s+(?:on|for|rupees?)?\s*(.+)', 1, 2),
+        # "paid 500 for electricity", "pay 300 on rent"
+        (r'(?:paid|pay)\s+(\d+(?:\.\d+)?)\s+(?:for|on)?\s*(.+)', 1, 2),
+        # "bought 500 worth of groceries", "purchased 200 of supplies"
+        (r'(?:bought|purchased)\s+(\d+(?:\.\d+)?)\s+(?:worth\s+of|worth|of)\s+(.+)', 1, 2),
+        # "bought pizza for 500", "purchased a book at 300"
+        (r'(?:bought|purchased)\s+(.+?)\s+(?:for|at|worth|@)\s+(\d+(?:\.\d+)?)', 2, 1),
+        # "500 on lunch", "500 for dinner" (catch-all, must be last)
+        (r'(\d+(?:\.\d+)?)\s+(?:for|on|rupees?)?\s*(.+)', 1, 2),
     ]
-    text = text.lower().strip()
-    for pattern in patterns:
-        match = re.search(pattern, text)
+    text_clean = text.strip()
+    for pattern, amt_grp, desc_grp in patterns:
+        match = re.search(pattern, text_clean, re.IGNORECASE)
         if match:
-            return float(match.group(1)), match.group(2).strip()
+            return float(match.group(amt_grp)), match.group(desc_grp).strip()
     return None, None
 
 def is_expense_entry(text):
@@ -77,7 +84,7 @@ def smart_response(question, df):
 
 def llm_response(question, df, api_key, provider):
     try:
-        from app import ExpenseLLMHandler
+        from llm_handler import ExpenseLLMHandler
         handler = ExpenseLLMHandler(api_key, provider)
         return handler.get_response(df, question)
     except Exception as e:

@@ -7,15 +7,33 @@ const COLORS = ["#3b82f6", "#00c9a7", "#f59e0b", "#ef4444", "#8b5cf6", "#10b981"
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchDashboard = () => {
+    setLoading(true);
+    setError(null);
+    getDashboard()
+      .then((res) => {
+        setData(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError("Failed to load dashboard. Is the backend running?");
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
-    getDashboard().then((res) => {
-      setData(res.data);
-      setLoading(false);
-    });
+    fetchDashboard();
   }, []);
 
   if (loading) return <div style={{ color: "#94a3b8" }}>Loading dashboard...</div>;
+  if (error) return (
+    <div style={{ background: "#1e293b", borderRadius: 12, padding: 24, color: "#ef4444" }}>
+      {error}
+      <button onClick={fetchDashboard} style={{ marginLeft: 12, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: 13 }}>Retry</button>
+    </div>
+  );
   if (!data || data.count === 0) return <div style={{ color: "#94a3b8" }}>No expenses yet. Add some from the Chat tab!</div>;
 
   return (

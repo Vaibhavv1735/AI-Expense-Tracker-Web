@@ -4,15 +4,33 @@ import { getInsights } from "../api";
 export default function Insights() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchInsights = () => {
+    setLoading(true);
+    setError(null);
+    getInsights()
+      .then((res) => {
+        setData(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError("Failed to load insights. Is the backend running?");
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
-    getInsights().then((res) => {
-      setData(res.data);
-      setLoading(false);
-    });
+    fetchInsights();
   }, []);
 
   if (loading) return <div style={{ color: "#94a3b8" }}>Loading insights...</div>;
+  if (error) return (
+    <div style={{ background: "#1e293b", borderRadius: 12, padding: 24, color: "#ef4444" }}>
+      {error}
+      <button onClick={fetchInsights} style={{ marginLeft: 12, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: 13 }}>Retry</button>
+    </div>
+  );
 
   if (data?.message) return (
     <div style={{ background: "#1e293b", borderRadius: 12, padding: 24, color: "#94a3b8" }}>

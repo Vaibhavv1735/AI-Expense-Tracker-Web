@@ -7,6 +7,7 @@ const CATEGORIES = ["All", "Food", "Transport", "Shopping", "Bills", "Entertainm
 export default function History() {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [period, setPeriod] = useState("All");
   const [category, setCategory] = useState("All");
 
@@ -21,17 +22,27 @@ export default function History() {
 
   const fetchExpenses = async () => {
     setLoading(true);
-    const { start, end } = getDateRange(period);
-    const res = await getExpenses(start, end, category === "All" ? null : category);
-    setExpenses(res.data.expenses);
+    setError(null);
+    try {
+      const { start, end } = getDateRange(period);
+      const res = await getExpenses(start, end, category === "All" ? null : category);
+      setExpenses(res.data.expenses);
+    } catch (err) {
+      setError("Failed to load expenses. Is the backend running?");
+      setExpenses([]);
+    }
     setLoading(false);
   };
 
   useEffect(() => { fetchExpenses(); }, [period, category]);
 
   const handleDelete = async (id) => {
-    await deleteExpense(id);
-    fetchExpenses();
+    try {
+      await deleteExpense(id);
+      fetchExpenses();
+    } catch (err) {
+      alert("Failed to delete expense. Please try again.");
+    }
   };
 
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -68,6 +79,14 @@ export default function History() {
         <div style={{ background: "#1e293b", borderRadius: 10, padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ color: "#94a3b8", fontSize: 14 }}>{expenses.length} transactions</span>
           <span style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>Total: ₹{total.toLocaleString()}</span>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div style={{ background: "#1e293b", borderRadius: 10, padding: "12px 20px", color: "#ef4444" }}>
+          {error}
+          <button onClick={fetchExpenses} style={{ marginLeft: 12, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: 13 }}>Retry</button>
         </div>
       )}
 
